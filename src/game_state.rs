@@ -83,6 +83,13 @@ impl From<&api_types::Battlesnake> for Battlesnake {
 }
 
 impl Battlesnake {
+    pub fn new(cells: Vec<(usize, usize)>) -> Self {
+        let cells = cells
+            .into_iter()
+            .map(|(x, y)| Cell(x as i8, y as i8))
+            .collect();
+        Self { cells }
+    }
     pub fn new_dead() -> Self {
         Battlesnake { cells: vec![] }
     }
@@ -123,17 +130,6 @@ impl Battlesnake {
         } else {
             false
         }
-    }
-}
-
-#[cfg(test)]
-impl Battlesnake {
-    pub fn new(cells: Vec<(usize, usize)>) -> Self {
-        let cells = cells
-            .into_iter()
-            .map(|(x, y)| Cell(x as i8, y as i8))
-            .collect();
-        Self { cells }
     }
 }
 
