@@ -116,6 +116,17 @@ impl Battlesnake {
     }
 }
 
+#[cfg(test)]
+impl Battlesnake {
+    pub fn new(cells: Vec<(usize, usize)>) -> Self {
+        let cells = cells
+            .into_iter()
+            .map(|(x, y)| Cell(x as i8, y as i8))
+            .collect();
+        Self { cells }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Move {
     Up,
@@ -216,7 +227,10 @@ mod tests {
         let target = Battlesnake {
             cells: vec![Cell(5, 5), Cell(4, 5)],
         };
-        assert_eq!(target.update(Move::Up, &vec![]).cells, vec![Cell(5, 6), Cell(5, 5)]);
+        assert_eq!(
+            target.update(Move::Up, &vec![]).cells,
+            vec![Cell(5, 6), Cell(5, 5)]
+        );
         assert_eq!(
             target.update(Move::Left, &vec![]).cells,
             vec![Cell(4, 5), Cell(5, 5)]

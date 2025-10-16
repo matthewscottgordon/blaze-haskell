@@ -1,13 +1,14 @@
-use crate::game_state::{GameState, Move};
+use crate::game_state::{Battlesnake, GameState, Move};
 
 static MAX_SEARCH_DEPTH: usize = 10;
 static WIN_VALUE: f32 = 1.0;
-static LOSE_VALUE: f32 = 0.0;
+static LOSE_VALUE: f32 = -10.0;
 
 pub async fn devise_plan(game_state: GameState) -> Move {
     find_plan(&game_state, MAX_SEARCH_DEPTH).0
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum GameStatus {
     Win,
     Lose,
@@ -69,7 +70,7 @@ fn check_out_of_bounds(game_state: GameState) -> GameState {
 fn check_win_lose(game_state: &GameState) -> GameStatus {
     if !game_state.player.is_alive() {
         GameStatus::Lose
-    } else if game_state.enemies.iter().all(|s| !s.is_alive()) {
+    } else if !game_state.enemies.is_empty() && game_state.enemies.iter().all(|s| !s.is_alive()) {
         GameStatus::Win
     } else {
         GameStatus::Continue
@@ -214,5 +215,59 @@ mod tests {
     #[test]
     fn combine_scores_yields_average() {
         assert_eq!(combine_scores([0.0, 3.5, -3.5, 10.0].iter().copied()), 2.5);
+    }
+
+    #[test]
+    fn check_win_lose_detects_win_state() {
+        let game_state = GameState {
+            height: 11,
+            width: 11,
+            player: Battlesnake::new(vec![(1, 2), (1, 3), (1, 4)]),
+            enemies: vec![Battlesnake::new_dead(), Battlesnake::new_dead()],
+            food: vec![],
+        };
+        assert_eq!(check_win_lose(&game_state), GameStatus::Win);
+    }
+
+    #[test]
+    fn check_win_lose_detects_lose_state() {
+        let game_state = GameState {
+            height: 11,
+            width: 11,
+            player: Battlesnake::new_dead(),
+            enemies: vec![
+                Battlesnake::new(vec![(4, 2), (4, 3), (4, 4)]),
+                Battlesnake::new(vec![(3, 5), (3, 6), (4, 6)]),
+            ],
+            food: vec![],
+        };
+        assert_eq!(check_win_lose(&game_state), GameStatus::Lose);
+
+        let game_state = GameState {
+            enemies: vec![Battlesnake::new_dead(), Battlesnake::new_dead()],
+            ..game_state
+        };
+        assert_eq!(check_win_lose(&game_state), GameStatus::Lose);
+    }
+
+    #[test]
+    fn check_win_lose_detects_continue_state() {
+        let game_state = GameState {
+            height: 11,
+            width: 11,
+            player: Battlesnake::new(vec![(1, 2), (1, 3), (1, 4)]),
+            enemies: vec![
+                Battlesnake::new(vec![(4, 2), (4, 3), (4, 4)]),
+                Battlesnake::new(vec![(3, 5), (3, 6), (4, 6)]),
+            ],
+            food: vec![],
+        };
+        assert_eq!(check_win_lose(&game_state), GameStatus::Continue);
+
+        let game_state = GameState {
+            enemies: vec![],
+            ..game_state
+        };
+        assert_eq!(check_win_lose(&game_state), GameStatus::Continue);
     }
 }
