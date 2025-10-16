@@ -106,6 +106,10 @@ impl Battlesnake {
         Self { cells }
     }
 
+    pub fn length(&self) -> usize {
+        self.cells.len()
+    }
+
     pub fn head(&self) -> Option<Cell> {
         self.cells.first().copied()
     }

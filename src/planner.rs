@@ -88,10 +88,7 @@ struct CellGrid<T> {
 impl<T: Default + Clone> CellGrid<T> {
     pub fn new(width: usize, height: usize) -> Self {
         let data = vec![T::default(); width * height];
-        Self {
-            data,
-            width,
-        }
+        Self { data, width }
     }
 }
 
@@ -121,7 +118,7 @@ fn check_collisions(game_state: GameState) -> GameState {
         }
     }
 
-    let player = if let Some(cell) = game_state.player.head() {
+    let mut player = if let Some(cell) = game_state.player.head() {
         match cells[cell] {
             CellContents::Empty => game_state.player,
             CellContents::PlayerBody => Battlesnake::new_dead(),
@@ -130,7 +127,7 @@ fn check_collisions(game_state: GameState) -> GameState {
     } else {
         game_state.player
     };
-    let enemies = game_state
+    let mut enemies: Vec<Battlesnake> = game_state
         .enemies
         .into_iter()
         .filter_map(|snake| {
@@ -146,7 +143,31 @@ fn check_collisions(game_state: GameState) -> GameState {
         })
         .collect();
 
-    // TODO: Check for head colisions
+    let num_enemies = enemies.len();
+    for i in 0..num_enemies {
+        if enemies[i].is_alive() {
+            if enemies[i].head() == player.head() {
+                if enemies[i].length() >= player.length() {
+                    player = Battlesnake::new_dead()
+                }
+                if enemies[i].length() <= player.length() {
+                    enemies[i] = Battlesnake::new_dead()
+                }
+            }
+        }
+        for j in i + 1..num_enemies {
+            if enemies[j].is_alive() {
+                if enemies[i].head() == enemies[j].head() {
+                    if enemies[i].length() >= enemies[j].length() {
+                        enemies[j] = Battlesnake::new_dead()
+                    }
+                    if enemies[i].length() <= enemies[j].length() {
+                        enemies[i] = Battlesnake::new_dead()
+                    }
+                }
+            }
+        }
+    }
 
     GameState {
         player,
