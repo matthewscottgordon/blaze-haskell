@@ -113,6 +113,7 @@ impl From<game_state::Move> for MoveResponse {
 
 async fn post_move(request: Json<MoveRequest>) -> Result<Json<MoveResponse>> {
     info!("Receive request for turn {} move.", request.turn);
+    info!("Latency on last turn was {}.", request.you.latency);
     Ok(Json(
         planner::devise_plan(GameState::from_board(&request.board, &request.you.id)?)
             .await
