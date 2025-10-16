@@ -7,7 +7,7 @@ use {
     serde::{Deserialize, Serialize},
 };
 
-use crate::{
+use blaze_haskell::{
     api_types::{Battlesnake, Board, Game},
     error::Result,
     game_state,

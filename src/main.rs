@@ -1,10 +1,6 @@
 use {tower_http::trace::TraceLayer, tracing_subscriber::EnvFilter};
 
-mod api_types;
-mod error;
-mod game_state;
 mod router;
-mod planner;
 
 #[tokio::main]
 async fn main() {
