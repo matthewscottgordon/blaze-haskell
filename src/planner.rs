@@ -149,7 +149,7 @@ fn get_possible_next_states(
     game_state: &GameState,
     player_move: Move,
 ) -> impl ExactSizeIterator<Item = GameState> {
-    MovePermutations::new(game_state.enemies.len()).map(move |enemy_moves| GameState {
+    MovePermutations::new(game_state.enemies.len().max(1)).map(move |enemy_moves| GameState {
         height: game_state.height,
         width: game_state.width,
         player: game_state.player.update(player_move, &game_state.food),
