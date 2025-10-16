@@ -1,27 +1,58 @@
 use crate::game_state::{GameState, Move};
 
+static MAX_SEARCH_DEPTH: usize = 10;
+static WIN_VALUE: f32 = 1.0;
+static LOSE_VALUE: f32 = 0.0;
+
 pub async fn devise_plan(game_state: GameState) -> Move {
-    Move::enumerate()
-        .map(|player_move| {
-            (
-                player_move,
-                combine_scores(
-                    get_possible_next_states(&game_state, player_move).map(|s| score_gamestate(&s)),
-                ),
-            )
-        })
-        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-        .unwrap()
-        .0
+    find_plan(&game_state, MAX_SEARCH_DEPTH).0
 }
 
-fn score_gamestate(_game_state: &GameState) -> f32 {
-    todo!()
+enum GameStatus {
+    Win,
+    Lose,
+    Continue,
+}
+
+pub fn find_plan(game_state: &GameState, search_depth: usize) -> (Move, f32) {
+    if search_depth > 0 {
+        Move::enumerate()
+            .map(|player_move| {
+                (
+                    player_move,
+                    combine_scores(get_possible_next_states(game_state, player_move).map(
+                        |new_game_state| match check_win_lose(&new_game_state) {
+                            GameStatus::Win => WIN_VALUE,
+                            GameStatus::Lose => LOSE_VALUE,
+                            GameStatus::Continue => find_plan(&new_game_state, search_depth - 1).1,
+                        },
+                    )),
+                )
+            })
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+            .unwrap()
+    } else {
+        (Move::Up, heuristic_score(game_state))
+    }
 }
 
 fn combine_scores(scores: impl ExactSizeIterator<Item = f32>) -> f32 {
     let count = scores.len() as f32;
     scores.sum::<f32>() / count
+}
+
+fn check_win_lose(game_state: &GameState) -> GameStatus {
+    if !game_state.player.is_alive() {
+        GameStatus::Lose
+    } else if game_state.enemies.iter().all(|s| !s.is_alive()) {
+        GameStatus::Win
+    } else {
+        GameStatus::Continue
+    }
+}
+
+fn heuristic_score(_game_state: &GameState) -> f32 {
+    0.5
 }
 
 struct MovePermutations {
@@ -95,12 +126,13 @@ fn get_possible_next_states(
     MovePermutations::new(game_state.enemies.len()).map(move |enemy_moves| GameState {
         height: game_state.height,
         width: game_state.width,
-        player: game_state.player.update(player_move),
+        player: game_state.player.update(player_move, &game_state.food),
         enemies: game_state
             .enemies
             .iter()
             .zip(enemy_moves)
-            .map(|(s, m)| s.update(m))
+            .map(|(s, m)| s.update(m, &game_state.food))
+            .filter(|s| !s.is_alive())
             .collect(),
         food: game_state.food.clone(),
     })
@@ -141,15 +173,15 @@ mod tests {
             assert_eq!(v, target.len());
             target.next();
             if size > 0 {
-                assert_eq!(v-1, target.len());
+                assert_eq!(v - 1, target.len());
             }
             if size > 1 {
                 target.next();
-                assert_eq!(v-2, target.len());
+                assert_eq!(v - 2, target.len());
             }
             if size > 2 {
                 target.next();
-                assert_eq!(v-3, target.len());
+                assert_eq!(v - 3, target.len());
             }
         }
     }

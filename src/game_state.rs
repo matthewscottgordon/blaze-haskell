@@ -81,13 +81,20 @@ impl From<&api_types::Battlesnake> for Battlesnake {
 }
 
 impl Battlesnake {
-    pub fn update(&self, snake_move: Move) -> Battlesnake {
+    pub fn update(&self, snake_move: Move, food: &[Cell]) -> Battlesnake {
         let mut cells = Vec::with_capacity(self.cells.len());
         if let Some(&head) = self.cells.first() {
-            cells.push(head + snake_move);
-            cells.extend_from_slice(&self.cells[0..self.cells.len() - 1]);
+            let new_head = head + snake_move;
+            cells.push(new_head);
+            cells.extend_from_slice(
+                &self.cells[0..self.cells.len() - if food.contains(&new_head) { 0 } else { 1 }],
+            );
         }
         Self { cells }
+    }
+
+    pub fn is_alive(&self) -> bool {
+        !self.cells.is_empty()
     }
 }
 
@@ -101,7 +108,9 @@ pub enum Move {
 
 impl Move {
     pub fn enumerate() -> MovesEnumerator {
-        MovesEnumerator{next:Some(Move::Up)}
+        MovesEnumerator {
+            next: Some(Move::Up),
+        }
     }
 }
 
@@ -156,7 +165,7 @@ mod tests {
 
     #[test]
     fn moves_enumerator() {
-        let result : Vec<_> = Move::enumerate().collect();
+        let result: Vec<_> = Move::enumerate().collect();
         assert_eq!(result.len(), 4);
         assert!(result.contains(&Move::Up));
         assert!(result.contains(&Move::Down));
@@ -170,39 +179,39 @@ mod tests {
             cells: vec![Cell(2, 3), Cell(2, 4), Cell(2, 5), Cell(1, 5), Cell(0, 5)],
         };
         assert_eq!(
-            target.update(Move::Up).cells,
+            target.update(Move::Up, &vec![]).cells,
             vec![Cell(2, 4), Cell(2, 3), Cell(2, 4), Cell(2, 5), Cell(1, 5)]
         );
         assert_eq!(
-            target.update(Move::Down).cells,
+            target.update(Move::Down, &vec![]).cells,
             vec![Cell(2, 2), Cell(2, 3), Cell(2, 4), Cell(2, 5), Cell(1, 5)]
         );
         assert_eq!(
-            target.update(Move::Left).cells,
+            target.update(Move::Left, &vec![]).cells,
             vec![Cell(1, 3), Cell(2, 3), Cell(2, 4), Cell(2, 5), Cell(1, 5)]
         );
         assert_eq!(
-            target.update(Move::Right).cells,
+            target.update(Move::Right, &vec![]).cells,
             vec![Cell(3, 3), Cell(2, 3), Cell(2, 4), Cell(2, 5), Cell(1, 5)]
         );
 
         let target = Battlesnake {
             cells: vec![Cell(5, 5), Cell(4, 5)],
         };
-        assert_eq!(target.update(Move::Up).cells, vec![Cell(5, 6), Cell(5, 5)]);
+        assert_eq!(target.update(Move::Up, &vec![]).cells, vec![Cell(5, 6), Cell(5, 5)]);
         assert_eq!(
-            target.update(Move::Left).cells,
+            target.update(Move::Left, &vec![]).cells,
             vec![Cell(4, 5), Cell(5, 5)]
         );
 
         let target = Battlesnake {
             cells: vec![Cell(7, 0)],
         };
-        assert_eq!(target.update(Move::Up).cells, vec![Cell(7, 1)]);
-        assert_eq!(target.update(Move::Left).cells, vec![Cell(6, 0)]);
+        assert_eq!(target.update(Move::Up, &vec![]).cells, vec![Cell(7, 1)]);
+        assert_eq!(target.update(Move::Left, &vec![]).cells, vec![Cell(6, 0)]);
 
         let target = Battlesnake { cells: vec![] };
-        assert_eq!(target.update(Move::Up).cells, vec![]);
-        assert_eq!(target.update(Move::Left).cells, vec![]);
+        assert_eq!(target.update(Move::Up, &vec![]).cells, vec![]);
+        assert_eq!(target.update(Move::Left, &vec![]).cells, vec![]);
     }
 }
