@@ -1,6 +1,6 @@
 use crate::game_state::{Battlesnake, Cell, GameState, Move};
 
-static MAX_SEARCH_DEPTH: usize = 5;
+static MAX_SEARCH_DEPTH: usize = 4;
 static WIN_VALUE: f32 = 1.0;
 static LOSE_VALUE: f32 = -10.0;
 
