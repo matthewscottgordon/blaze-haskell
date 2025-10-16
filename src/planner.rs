@@ -68,8 +68,9 @@ fn check_out_of_bounds(game_state: GameState) -> GameState {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 enum CellContents {
+    #[default]
     Empty,
     //Food,
     //Hazard,
@@ -79,21 +80,49 @@ enum CellContents {
     EnemySnakeBody(u8),
 }
 
-fn check_collisions(game_state: GameState) -> GameState {
-    let mut cells =
-        vec![vec![CellContents::Empty; game_state.height as usize]; game_state.width as usize];
+struct CellGrid<T> {
+    width: usize,
+    data: Vec<T>,
+}
 
-    for &Cell(x, y) in game_state.player.body() {
-        cells[x as usize][y as usize] = CellContents::PlayerBody;
+impl<T: Default + Clone> CellGrid<T> {
+    pub fn new(width: usize, height: usize) -> Self {
+        let data = vec![T::default(); width * height];
+        Self {
+            data,
+            width,
+        }
+    }
+}
+
+impl<T> std::ops::Index<Cell> for CellGrid<T> {
+    type Output = T;
+
+    fn index(&self, Cell(x, y): Cell) -> &Self::Output {
+        &self.data[y as usize * self.width + x as usize]
+    }
+}
+
+impl<T> std::ops::IndexMut<Cell> for CellGrid<T> {
+    fn index_mut(&mut self, Cell(x, y): Cell) -> &mut Self::Output {
+        &mut self.data[y as usize * self.width + x as usize]
+    }
+}
+
+fn check_collisions(game_state: GameState) -> GameState {
+    let mut cells = CellGrid::new(game_state.width as usize, game_state.height as usize);
+
+    for &cell in game_state.player.body() {
+        cells[cell] = CellContents::PlayerBody;
     }
     for (i, snake) in game_state.enemies.iter().enumerate() {
-        for &Cell(x, y) in snake.body() {
-            cells[x as usize][y as usize] = CellContents::EnemySnakeBody(i as u8);
+        for &cell in snake.body() {
+            cells[cell] = CellContents::EnemySnakeBody(i as u8);
         }
     }
 
-    let player = if let Some(Cell(x, y)) = game_state.player.head() {
-        match cells[x as usize][y as usize] {
+    let player = if let Some(cell) = game_state.player.head() {
+        match cells[cell] {
             CellContents::Empty => game_state.player,
             CellContents::PlayerBody => Battlesnake::new_dead(),
             CellContents::EnemySnakeBody(_) => Battlesnake::new_dead(),
@@ -101,17 +130,21 @@ fn check_collisions(game_state: GameState) -> GameState {
     } else {
         game_state.player
     };
-    let enemies = game_state.enemies.into_iter().filter_map(|snake| {
-        if let Some(Cell(x, y)) = snake.head() {
-            match cells[x as usize][y as usize] {
-                CellContents::Empty => Some(snake),
-                CellContents::PlayerBody => None,
-                CellContents::EnemySnakeBody(_) => None,
+    let enemies = game_state
+        .enemies
+        .into_iter()
+        .filter_map(|snake| {
+            if let Some(cell) = snake.head() {
+                match cells[cell] {
+                    CellContents::Empty => Some(snake),
+                    CellContents::PlayerBody => None,
+                    CellContents::EnemySnakeBody(_) => None,
+                }
+            } else {
+                Some(snake)
             }
-        } else {
-            Some(snake)
-        }
-    }).collect();
+        })
+        .collect();
 
     // TODO: Check for head colisions
 
