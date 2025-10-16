@@ -1,6 +1,6 @@
-use crate::game_state::{Battlesnake, GameState, Move};
+use crate::game_state::{Battlesnake, Cell, GameState, Move};
 
-static MAX_SEARCH_DEPTH: usize = 10;
+static MAX_SEARCH_DEPTH: usize = 5;
 static WIN_VALUE: f32 = 1.0;
 static LOSE_VALUE: f32 = -10.0;
 
@@ -24,6 +24,7 @@ pub fn find_plan(game_state: &GameState, search_depth: usize) -> (Move, f32) {
                     combine_scores(
                         get_possible_next_states(game_state, player_move)
                             .map(check_out_of_bounds)
+                            .map(check_collisions)
                             .map(|new_game_state| match check_win_lose(&new_game_state) {
                                 GameStatus::Win => WIN_VALUE,
                                 GameStatus::Lose => LOSE_VALUE,
@@ -60,6 +61,60 @@ fn check_out_of_bounds(game_state: GameState) -> GameState {
         .into_iter()
         .map(check_snake_out_of_bounds)
         .collect();
+    GameState {
+        player,
+        enemies,
+        ..game_state
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum CellContents {
+    Empty,
+    //Food,
+    //Hazard,
+    // PlayerHead,
+    PlayerBody,
+    //EnemySnakeHead(u8),
+    EnemySnakeBody(u8),
+}
+
+fn check_collisions(game_state: GameState) -> GameState {
+    let mut cells =
+        vec![vec![CellContents::Empty; game_state.height as usize]; game_state.width as usize];
+
+    for &Cell(x, y) in game_state.player.body() {
+        cells[x as usize][y as usize] = CellContents::PlayerBody;
+    }
+    for (i, snake) in game_state.enemies.iter().enumerate() {
+        for &Cell(x, y) in snake.body() {
+            cells[x as usize][y as usize] = CellContents::EnemySnakeBody(i as u8);
+        }
+    }
+
+    let player = if let Some(Cell(x, y)) = game_state.player.head() {
+        match cells[x as usize][y as usize] {
+            CellContents::Empty => game_state.player,
+            CellContents::PlayerBody => Battlesnake::new_dead(),
+            CellContents::EnemySnakeBody(_) => Battlesnake::new_dead(),
+        }
+    } else {
+        game_state.player
+    };
+    let enemies = game_state.enemies.into_iter().filter_map(|snake| {
+        if let Some(Cell(x, y)) = snake.head() {
+            match cells[x as usize][y as usize] {
+                CellContents::Empty => Some(snake),
+                CellContents::PlayerBody => None,
+                CellContents::EnemySnakeBody(_) => None,
+            }
+        } else {
+            Some(snake)
+        }
+    }).collect();
+
+    // TODO: Check for head colisions
+
     GameState {
         player,
         enemies,

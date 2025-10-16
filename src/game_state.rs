@@ -55,7 +55,7 @@ impl GameState {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Cell(i8, i8);
+pub struct Cell(pub i8, pub i8);
 
 impl From<&api_types::Coordinates> for Cell {
     fn from(value: &api_types::Coordinates) -> Self {
@@ -101,6 +101,14 @@ impl Battlesnake {
 
     pub fn head(&self) -> Option<Cell> {
         self.cells.first().copied()
+    }
+
+    pub fn body(&self) -> &[Cell] {
+        if self.cells.is_empty() {
+            &self.cells
+        } else {
+            &self.cells[1..]
+        }
     }
 
     pub fn is_alive(&self) -> bool {
