@@ -17,6 +17,6 @@ async fn main() {
         .init();
     let app = router::router().layer(TraceLayer::new_for_http());
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
