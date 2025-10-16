@@ -3,6 +3,7 @@ use crate::{
     error::{Error, Result},
 };
 
+#[derive(Debug)]
 pub struct GameState {
     pub height: u16,
     pub width: u16,
@@ -62,6 +63,7 @@ impl From<&api_types::Coordinates> for Cell {
     }
 }
 
+#[derive(Debug)]
 pub struct Battlesnake {
     cells: Vec<Cell>,
 }
