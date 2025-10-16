@@ -81,6 +81,10 @@ impl From<&api_types::Battlesnake> for Battlesnake {
 }
 
 impl Battlesnake {
+    pub fn new_dead() -> Self {
+        Battlesnake { cells: vec![] }
+    }
+
     pub fn update(&self, snake_move: Move, food: &[Cell]) -> Battlesnake {
         let mut cells = Vec::with_capacity(self.cells.len());
         if let Some(&head) = self.cells.first() {
@@ -93,8 +97,22 @@ impl Battlesnake {
         Self { cells }
     }
 
+    pub fn head(&self) -> Option<Cell> {
+        self.cells.first().copied()
+    }
+
     pub fn is_alive(&self) -> bool {
         !self.cells.is_empty()
+    }
+
+    pub fn has_gone_oob(&self, board_width: i32, board_height: i32) -> bool {
+        if let Some(head) = self.head() {
+            let x = head.0 as i32;
+            let y = head.1 as i32;
+            x >= board_width || x < 0 || y >= board_height || y < 0
+        } else {
+            false
+        }
     }
 }
 
@@ -213,5 +231,18 @@ mod tests {
         let target = Battlesnake { cells: vec![] };
         assert_eq!(target.update(Move::Up, &vec![]).cells, vec![]);
         assert_eq!(target.update(Move::Left, &vec![]).cells, vec![]);
+    }
+
+    #[test]
+    fn battlesnake_has_gone_oob() {
+        let target = Battlesnake {
+            cells: vec![Cell(7, 3), Cell(6, 3), Cell(6, 2)],
+        };
+        assert!(!target.has_gone_oob(10, 10));
+        assert!(!target.has_gone_oob(8, 4));
+        assert!(target.has_gone_oob(7, 4));
+        assert!(target.has_gone_oob(8, 3));
+        assert!(target.has_gone_oob(8, 1));
+        assert!(target.has_gone_oob(5, 1));
     }
 }

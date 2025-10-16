@@ -20,13 +20,17 @@ pub fn find_plan(game_state: &GameState, search_depth: usize) -> (Move, f32) {
             .map(|player_move| {
                 (
                     player_move,
-                    combine_scores(get_possible_next_states(game_state, player_move).map(
-                        |new_game_state| match check_win_lose(&new_game_state) {
-                            GameStatus::Win => WIN_VALUE,
-                            GameStatus::Lose => LOSE_VALUE,
-                            GameStatus::Continue => find_plan(&new_game_state, search_depth - 1).1,
-                        },
-                    )),
+                    combine_scores(
+                        get_possible_next_states(game_state, player_move)
+                            .map(check_out_of_bounds)
+                            .map(|new_game_state| match check_win_lose(&new_game_state) {
+                                GameStatus::Win => WIN_VALUE,
+                                GameStatus::Lose => LOSE_VALUE,
+                                GameStatus::Continue => {
+                                    find_plan(&new_game_state, search_depth - 1).1
+                                }
+                            }),
+                    ),
                 )
             })
             .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
@@ -39,6 +43,27 @@ pub fn find_plan(game_state: &GameState, search_depth: usize) -> (Move, f32) {
 fn combine_scores(scores: impl ExactSizeIterator<Item = f32>) -> f32 {
     let count = scores.len() as f32;
     scores.sum::<f32>() / count
+}
+
+fn check_out_of_bounds(game_state: GameState) -> GameState {
+    let check_snake_out_of_bounds = |snake: Battlesnake| {
+        if snake.has_gone_oob(game_state.width as i32, game_state.height as i32) {
+            Battlesnake::new_dead()
+        } else {
+            snake
+        }
+    };
+    let player = check_snake_out_of_bounds(game_state.player);
+    let enemies = game_state
+        .enemies
+        .into_iter()
+        .map(check_snake_out_of_bounds)
+        .collect();
+    GameState {
+        player,
+        enemies,
+        ..game_state
+    }
 }
 
 fn check_win_lose(game_state: &GameState) -> GameStatus {
