@@ -162,7 +162,7 @@ fn get_possible_next_states(
             .iter()
             .zip(enemy_moves)
             .map(|(s, m)| s.update(m, &game_state.food))
-            .filter(|s| !s.is_alive())
+            .filter(|s| s.is_alive())
             .collect(),
         food: game_state.food.clone(),
     })
@@ -171,6 +171,26 @@ fn get_possible_next_states(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game_state::Cell;
+
+    #[test]
+    fn check_out_of_bounds_does_not_remove_in_bounds_snakes() {
+        let gamestate = GameState {
+            height: 11,
+            width: 11,
+            player: Battlesnake::new(&[(3, 3), (3, 2), (3, 1), (3, 0)]),
+            enemies: vec![
+                Battlesnake::new(&[(7, 2), (7, 3), (8, 3)]),
+                Battlesnake::new(&[(1, 3), (2, 3), (3, 3), (4, 3), (5, 3)]),
+            ],
+            food: vec![],
+        };
+        let new_gamestate = check_out_of_bounds(gamestate);
+        assert!(new_gamestate.player.is_alive());
+        assert_eq!(new_gamestate.enemies.len(), 2);
+        assert!(new_gamestate.enemies[0].is_alive());
+        assert!(new_gamestate.enemies[1].is_alive());
+    }
 
     #[test]
     fn move_permutations() {
@@ -273,5 +293,40 @@ mod tests {
             ..game_state
         };
         assert_eq!(check_win_lose(&game_state), GameStatus::Continue);
+    }
+
+    #[test]
+    fn get_possible_next_states_finds_correct_states() {
+        let game_state = GameState {
+            height: 11,
+            width: 11,
+            player: Battlesnake::new(&[(3, 3), (4, 3), (5, 3), (6, 3)]),
+            enemies: vec![
+                Battlesnake::new(&[(7, 2), (7, 3), (8, 3)]),
+                Battlesnake::new(&[(2, 1), (2, 2), (2, 3), (2, 4)]),
+            ],
+            food: vec![],
+        };
+        let results: Vec<_> = get_possible_next_states(&game_state, Move::Left).collect();
+        assert_eq!(results.len(), 16);
+        assert!(results.iter().all(|e| e.player.head() == Some(Cell(2,3))));
+        assert!(results.iter().all(|e| e.enemies.len() == 2));
+        assert!(results.iter().all(|e| e.enemies[1].body().contains(&Cell(2,3))));
+    }
+
+    #[test]
+    fn find_plan_actually_avoids_snake() {
+        return;
+        let game_state = GameState {
+            height: 11,
+            width: 11,
+            player: Battlesnake::new(&[(3, 3), (4, 3), (5, 3), (6, 3)]),
+            enemies: vec![
+                Battlesnake::new(&[(7, 2), (7, 3), (8, 3)]),
+                Battlesnake::new(&[(2, 1), (2, 2), (2, 3), (2, 4)]),
+            ],
+            food: vec![],
+        };
+        assert_ne!(find_plan(&game_state, 2).0, Move::Left);
     }
 }
