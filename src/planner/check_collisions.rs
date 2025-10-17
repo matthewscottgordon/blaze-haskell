@@ -66,7 +66,7 @@ pub fn check_collisions(game_state: GameState) -> GameState {
     }
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum CellContents {
     #[default]
     Empty,
@@ -90,12 +90,61 @@ impl<T> std::ops::Index<Cell> for CellGrid<T> {
     type Output = T;
 
     fn index(&self, Cell(x, y): Cell) -> &Self::Output {
+        assert!(x >= 0);
+        assert!(y >= 0);
+        assert!((x as usize) < self.width);
         &self.data[y as usize * self.width + x as usize]
     }
 }
 
 impl<T> std::ops::IndexMut<Cell> for CellGrid<T> {
     fn index_mut(&mut self, Cell(x, y): Cell) -> &mut Self::Output {
+        assert!(x >= 0);
+        assert!(y >= 0);
+        assert!((x as usize) < self.width);
         &mut self.data[y as usize * self.width + x as usize]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cell_grid_read_empty() {
+        let target: CellGrid<CellContents> = CellGrid::new(13, 9);
+        for x in 0..13 {
+            for y in 0..9 {
+                assert_eq!(target[Cell(x, y)], CellContents::Empty);
+            }
+        }
+    }
+
+    #[test]
+    fn cell_grid_oob_panic() {
+        let target: CellGrid<CellContents> = CellGrid::new(13, 9);
+        let result = std::panic::catch_unwind(|| target[Cell(13, 2)]);
+        assert!(result.is_err());
+        let result = std::panic::catch_unwind(|| target[Cell(2, 9)]);
+        assert!(result.is_err());
+        let result = std::panic::catch_unwind(|| target[Cell(-1, 3)]);
+        assert!(result.is_err());
+        let result = std::panic::catch_unwind(|| target[Cell(2, -1)]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn cell_grid_write_read() {
+        let mut target: CellGrid<(i8,i8)> = CellGrid::new(7,9);
+        for x in 0..7 {
+            for y in 0..9 {
+                target[Cell(x,y)] = (x,y);
+            }
+        }
+        for x in 0..7 {
+            for y in 0..9 {
+                assert_eq!(target[Cell(x,y)], (x,y));
+            }
+        }
     }
 }
