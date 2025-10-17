@@ -10,15 +10,13 @@ pub struct Battlesnake {
 
 impl From<&api_types::Battlesnake> for Battlesnake {
     fn from(value: &api_types::Battlesnake) -> Self {
-        let mut cells = Vec::with_capacity(value.length as usize);
-        cells.push((&value.head).into());
-        cells.extend(
-            value
+        Self {
+            cells: value
                 .body
                 .iter()
-                .map(<&api_types::Coordinates as Into<Cell>>::into),
-        );
-        Self { cells }
+                .map(<&api_types::Coordinates as Into<Cell>>::into)
+                .collect(),
+        }
     }
 }
 
@@ -80,6 +78,34 @@ impl Battlesnake {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn battlesnake_from_api_type() {
+        let battlesnake_json = r##"{
+  "id": "totally-unique-snake-id",
+  "name": "Sneky McSnek Face",
+  "health": 54,
+  "body": [
+    {"x": 0, "y": 0},
+    {"x": 1, "y": 0},
+    {"x": 2, "y": 0}
+  ],
+  "latency": "123",
+  "head": {"x": 0, "y": 0},
+  "length": 3,
+  "shout": "why are we shouting??",
+  "squad": "1",
+  "customizations":{
+    "color":"#26CF04",
+    "head":"smile",
+    "tail":"bolt"
+  }
+}"##;
+        let battlesnake: api_types::Battlesnake = serde_json::from_str(battlesnake_json).unwrap();
+        let battlesnake: Battlesnake = (&battlesnake).into();
+        assert_eq!(battlesnake.head(), Some(Cell(0, 0)));
+        assert_eq!(battlesnake.length(), 3);
+    }
 
     #[test]
     fn update_battlesnake() {
