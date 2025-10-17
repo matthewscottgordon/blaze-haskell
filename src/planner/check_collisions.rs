@@ -135,16 +135,48 @@ mod tests {
 
     #[test]
     fn cell_grid_write_read() {
-        let mut target: CellGrid<(i8,i8)> = CellGrid::new(7,9);
+        let mut target: CellGrid<(i8, i8)> = CellGrid::new(7, 9);
         for x in 0..7 {
             for y in 0..9 {
-                target[Cell(x,y)] = (x,y);
+                target[Cell(x, y)] = (x, y);
             }
         }
         for x in 0..7 {
             for y in 0..9 {
-                assert_eq!(target[Cell(x,y)], (x,y));
+                assert_eq!(target[Cell(x, y)], (x, y));
             }
         }
+    }
+
+    #[test]
+    fn test_player_collision_detected() {
+        let gamestate = GameState {
+            height: 11,
+            width: 11,
+            player: Battlesnake::new(&[(3, 3), (3, 2), (3, 1), (3, 0)]),
+            enemies: vec![
+                Battlesnake::new(&[(7, 2), (7, 3), (8, 3)]),
+                Battlesnake::new(&[(1, 3), (2, 3), (3, 3), (4, 3), (5, 3)]),
+            ],
+            food: vec![],
+        };
+        let new_gamestate = check_collisions(gamestate);
+        assert!(!new_gamestate.player.is_alive());
+        assert!(new_gamestate.enemies[0].is_alive());
+        assert!(new_gamestate.enemies[1].is_alive());
+        let gamestate = GameState {
+            height: 11,
+            width: 11,
+            player: Battlesnake::new(&[(3, 3), (3, 2), (3, 1), (3, 0)]),
+            enemies: vec![
+                Battlesnake::new(&[(1, 3), (2, 3), (3, 3), (4, 3), (5, 3)]),
+                Battlesnake::new(&[(7, 2), (7, 3), (8, 3)]),
+            ],
+            food: vec![],
+        };
+        let new_gamestate = check_collisions(gamestate);
+        assert!(!new_gamestate.player.is_alive());
+        assert!(new_gamestate.enemies[0].is_alive());
+        assert!(new_gamestate.enemies[1].is_alive());
     }
 }
