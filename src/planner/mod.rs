@@ -3,7 +3,7 @@ use crate::game_state::{Battlesnake, GameState, Move};
 mod check_collisions;
 use check_collisions::check_collisions;
 
-static MAX_SEARCH_DEPTH: usize = 4;
+static MAX_SEARCH_DEPTH: usize = 3;
 static WIN_VALUE: f32 = 1.0;
 static LOSE_VALUE: f32 = -10.0;
 
@@ -316,7 +316,6 @@ mod tests {
 
     #[test]
     fn find_plan_actually_avoids_snake() {
-        return;
         let game_state = GameState {
             height: 11,
             width: 11,
