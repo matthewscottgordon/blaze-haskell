@@ -1,0 +1,143 @@
+use crate::{
+    api_types,
+    error::{Error, Result},
+};
+
+mod battlesnake;
+pub use battlesnake::Battlesnake;
+
+#[derive(Debug)]
+pub struct GameState {
+    pub height: u16,
+    pub width: u16,
+    pub player: Battlesnake,
+    pub enemies: Vec<Battlesnake>,
+    pub food: Vec<Cell>,
+}
+
+impl GameState {
+    pub fn from_board(board: &api_types::Board, player_id: &str) -> Result<Self> {
+        let height = board.height as u16;
+        let width = board.width as u16;
+        let player = board
+            .snakes
+            .iter()
+            .find_map(|snake| {
+                if snake.id == player_id {
+                    Some(snake.into())
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| {
+                Error::new(format!(
+                    "Could not find player snake \"{}\" on board.",
+                    player_id
+                ))
+            })?;
+        let enemies = board
+            .snakes
+            .iter()
+            .filter_map(|snake| {
+                if snake.id != player_id {
+                    Some(snake.into())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let food = board.food.iter().map(|coord| coord.into()).collect();
+        Ok(GameState {
+            height,
+            width,
+            player,
+            enemies,
+            food,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Cell(pub i8, pub i8);
+
+impl From<&api_types::Coordinates> for Cell {
+    fn from(value: &api_types::Coordinates) -> Self {
+        Self(value.x as i8, value.y as i8)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Move {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl Move {
+    pub fn enumerate() -> MovesEnumerator {
+        MovesEnumerator {
+            next: Some(Move::Up),
+        }
+    }
+}
+
+pub struct MovesEnumerator {
+    next: Option<Move>,
+}
+
+impl Iterator for MovesEnumerator {
+    type Item = Move;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let result = self.next;
+        self.next = match self.next {
+            None => None,
+            Some(Move::Up) => Some(Move::Down),
+            Some(Move::Down) => Some(Move::Left),
+            Some(Move::Left) => Some(Move::Right),
+            Some(Move::Right) => None,
+        };
+        result
+    }
+}
+
+impl std::ops::Add<Move> for Cell {
+    type Output = Cell;
+
+    fn add(self, rhs: Move) -> Self::Output {
+        match rhs {
+            Move::Up => Cell(self.0, self.1 + 1),
+            Move::Down => Cell(self.0, self.1 - 1),
+            Move::Left => Cell(self.0 - 1, self.1),
+            Move::Right => Cell(self.0 + 1, self.1),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn add_move_to_cell() {
+        assert_eq!(Cell(0, 0) + Move::Up, Cell(0, 1));
+        assert_eq!(Cell(0, 0) + Move::Down, Cell(0, -1));
+        assert_eq!(Cell(0, 0) + Move::Left, Cell(-1, 0));
+        assert_eq!(Cell(0, 0) + Move::Right, Cell(1, 0));
+        assert_eq!(Cell(3, 7) + Move::Up, Cell(3, 8));
+        assert_eq!(Cell(3, 7) + Move::Down, Cell(3, 6));
+        assert_eq!(Cell(3, 7) + Move::Left, Cell(2, 7));
+        assert_eq!(Cell(3, 7) + Move::Right, Cell(4, 7));
+    }
+
+    #[test]
+    fn moves_enumerator() {
+        let result: Vec<_> = Move::enumerate().collect();
+        assert_eq!(result.len(), 4);
+        assert!(result.contains(&Move::Up));
+        assert!(result.contains(&Move::Down));
+        assert!(result.contains(&Move::Left));
+        assert!(result.contains(&Move::Right));
+    }
+}
