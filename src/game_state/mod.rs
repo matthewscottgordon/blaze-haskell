@@ -60,3 +60,98 @@ impl GameState {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn game_state_from_board() {
+        let board_json = r##"{
+  "height": 11,
+  "width": 12,
+  "food": [
+    {"x": 5, "y": 5},
+    {"x": 9, "y": 0},
+    {"x": 2, "y": 6}
+  ],
+  "hazards": [
+    {"x": 0, "y": 0},
+    {"x": 0, "y": 1},
+    {"x": 0, "y": 2}
+  ],
+  "snakes": [
+    {
+      "id": "snake-one",
+      "name": "Snake One",
+      "health": 54,
+      "body": [
+        {"x": 1, "y": 0},
+        {"x": 1, "y": 0},
+        {"x": 2, "y": 0}
+      ],
+      "latency": "123",
+      "head": {"x": 1, "y": 1},
+      "length": 3,
+      "shout": "why are we shouting??",
+      "squad": "1",
+      "customizations":{
+        "color":"#26CF04",
+        "head":"smile",
+        "tail":"bolt"
+      }
+    },
+    {
+      "id": "snake-two",
+      "name": "Snake Two",
+      "health": 54,
+      "body": [
+        {"x": 1, "y": 2},
+        {"x": 1, "y": 1},
+        {"x": 1, "y": 0}
+      ],
+      "latency": "123",
+      "head": {"x": 2, "y": 2},
+      "length": 3,
+      "shout": "why are we shouting??",
+      "squad": "1",
+      "customizations":{
+        "color":"#26CF04",
+        "head":"smile",
+        "tail":"bolt"
+      }
+    },
+    {
+      "id": "snake-one",
+      "name": "Snake 3",
+      "health": 54,
+      "body": [
+        {"x": 3, "y": 4},
+        {"x": 3, "y": 4},
+        {"x": 2, "y": 4}
+      ],
+      "latency": "123",
+      "head": {"x": 3, "y": 3},
+      "length": 3,
+      "shout": "why are we shouting??",
+      "squad": "1",
+      "customizations":{
+        "color":"#26CF04",
+        "head":"smile",
+        "tail":"bolt"
+      }
+    }
+  ]
+}"##;
+        let board: api_types::Board = serde_json::from_str(board_json).unwrap();
+        let target = GameState::from_board(&board, "snake-two").unwrap();
+        assert_eq!(target.height, 11);
+        assert_eq!(target.width, 12);
+        assert_eq!(target.player.head(), Some(Cell(2, 2)));
+        assert_eq!(target.enemies.len(), 2);
+        assert!(target.enemies.iter().any(|e| e.head() == Some(Cell(1, 1))));
+        assert_eq!(target.enemies.len(), 2);
+        assert!(target.enemies.iter().any(|e| e.head() == Some(Cell(3, 3))));
+        assert_eq!(target.food.len(), 3);
+    }
+}
