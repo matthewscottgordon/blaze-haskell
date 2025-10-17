@@ -1,11 +1,11 @@
-use crate::game_state::{Battlesnake, GameState, Move};
+use crate::game_state::{Battlesnake, Cell, GameState, Move};
 
 mod check_collisions;
 use check_collisions::check_collisions;
 
 static MAX_SEARCH_DEPTH: usize = 2;
-static WIN_VALUE: f32 = 1.0;
-static LOSE_VALUE: f32 = -10.0;
+static WIN_VALUE: f32 = 5.0;
+static LOSE_VALUE: f32 = -20.0;
 
 pub async fn devise_plan(game_state: GameState) -> Move {
     find_plan(&game_state, MAX_SEARCH_DEPTH).0
@@ -81,8 +81,21 @@ fn check_win_lose(game_state: &GameState) -> GameStatus {
     }
 }
 
-fn heuristic_score(_game_state: &GameState) -> f32 {
-    0.5
+fn heuristic_score(game_state: &GameState) -> f32 {
+    if let Some(player_head) = game_state.player.head() {
+        if let Some(distance_to_food) = game_state
+            .food
+            .iter()
+            .map(|Cell(x, y)| (player_head.0 - x).abs() + (player_head.1 - y).abs())
+            .min()
+        {
+            (10.0 - (distance_to_food as f32 / 10.0)).max(0.0)
+        } else {
+            0.1
+        }
+    } else {
+        0.0
+    }
 }
 
 struct MovePermutations {
@@ -171,7 +184,6 @@ fn get_possible_next_states(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game_state::Cell;
 
     #[test]
     fn check_out_of_bounds_does_not_remove_in_bounds_snakes() {
@@ -309,9 +321,13 @@ mod tests {
         };
         let results: Vec<_> = get_possible_next_states(&game_state, Move::Left).collect();
         assert_eq!(results.len(), 16);
-        assert!(results.iter().all(|e| e.player.head() == Some(Cell(2,3))));
+        assert!(results.iter().all(|e| e.player.head() == Some(Cell(2, 3))));
         assert!(results.iter().all(|e| e.enemies.len() == 2));
-        assert!(results.iter().all(|e| e.enemies[1].body().contains(&Cell(2,3))));
+        assert!(
+            results
+                .iter()
+                .all(|e| e.enemies[1].body().contains(&Cell(2, 3)))
+        );
     }
 
     #[test]
