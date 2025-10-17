@@ -226,7 +226,7 @@ mod tests {
         let game_state = GameState {
             height: 11,
             width: 11,
-            player: Battlesnake::new(vec![(1, 2), (1, 3), (1, 4)]),
+            player: Battlesnake::new(&[(1, 2), (1, 3), (1, 4)]),
             enemies: vec![Battlesnake::new_dead(), Battlesnake::new_dead()],
             food: vec![],
         };
@@ -240,8 +240,8 @@ mod tests {
             width: 11,
             player: Battlesnake::new_dead(),
             enemies: vec![
-                Battlesnake::new(vec![(4, 2), (4, 3), (4, 4)]),
-                Battlesnake::new(vec![(3, 5), (3, 6), (4, 6)]),
+                Battlesnake::new(&[(4, 2), (4, 3), (4, 4)]),
+                Battlesnake::new(&[(3, 5), (3, 6), (4, 6)]),
             ],
             food: vec![],
         };
@@ -259,10 +259,10 @@ mod tests {
         let game_state = GameState {
             height: 11,
             width: 11,
-            player: Battlesnake::new(vec![(1, 2), (1, 3), (1, 4)]),
+            player: Battlesnake::new(&[(1, 2), (1, 3), (1, 4)]),
             enemies: vec![
-                Battlesnake::new(vec![(4, 2), (4, 3), (4, 4)]),
-                Battlesnake::new(vec![(3, 5), (3, 6), (4, 6)]),
+                Battlesnake::new(&[(4, 2), (4, 3), (4, 4)]),
+                Battlesnake::new(&[(3, 5), (3, 6), (4, 6)]),
             ],
             food: vec![],
         };

@@ -21,10 +21,10 @@ impl From<&api_types::Battlesnake> for Battlesnake {
 }
 
 impl Battlesnake {
-    pub fn new(cells: Vec<(usize, usize)>) -> Self {
+    pub fn new(cells: &[(usize, usize)]) -> Self {
         let cells = cells
-            .into_iter()
-            .map(|(x, y)| Cell(x as i8, y as i8))
+            .iter()
+            .map(|&(x, y)| Cell(x as i8, y as i8))
             .collect();
         Self { cells }
     }
